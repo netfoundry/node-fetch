@@ -50,8 +50,19 @@ const streamDestructionSupported = 'destroy' in Stream.Readable.prototype;
  */
 function getIdentityFilePath() {
 	const identityFilePath = path.join( remote.app.getPath('userData'), 'ziti-identity.json' );
-	log.debug('identityFilePath is: %s', identityFilePath);
+	log.debug('identityFilePath is: ' + identityFilePath);
 	return identityFilePath;
+}
+
+/**
+ * Get path to JWT file
+ *
+ * @return  full path to JWT file
+ */
+function getJWTFilePath() {
+	const jwtFilePath = path.join( remote.app.getPath('userData'), 'ziti-jwt' );
+	log.debug('jwtFilePath is: ' + jwtFilePath);
+	return jwtFilePath;
 }
 
 /**
@@ -64,13 +75,15 @@ async function NF_enroll() {
 		
 		log.debug('NF_enroll entered');
 
-		let identityPath = window.zitiIdentityPath;	// This is assumed to be set by the app that is hosting us (e.g. Mattermost's MattermostView.jsx)
+		let identityPath = getJWTFilePath();
 		if (!identityPath || identityPath==='') {
-			log.debug('identityPath unset (%o)', identityPath);
+			log.debug('identityPath unset: ' + identityPath);
 
 			ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed, zitiIdentityPath not set', errorCode: -601});
 			reject(new Error('Ziti init failed, window.zitiIdentityPath not set'));
 		}
+
+		log.debug('Now calling window.ziti.NF_enroll: ' + window.ziti.NF_enroll);
 
 		const erc = window.ziti.NF_enroll(
 
@@ -180,6 +193,7 @@ async function doZitiInitialization() {
 	try {
 		if (!window.zitiInitialized) {
 			await NF_init().catch((e) => {
+				log.error('NF_init exception: ' + e);
 			});
 			window.zitiInitialized = true;
 		}
