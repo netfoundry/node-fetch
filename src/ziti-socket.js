@@ -72,6 +72,8 @@ class ZitiSocket extends Duplex {
                 window.ziti.NF_dial(
                     service,
 
+                    false,  // This is NOT a websocket
+
                     /**
                      * on_connect callback.
                      */
