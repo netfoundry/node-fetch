@@ -83,6 +83,6 @@
     "debug": "^4.1.1",
     "electron": "^5.0.11",
     "electron-log": "^4.1.0",
-    "ziti-sdk-nodejs": "0.1.23"
+    "ziti-sdk-nodejs": "0.1.24"
   }
 }
