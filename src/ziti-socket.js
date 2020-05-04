@@ -16,6 +16,7 @@ limitations under the License.
 
 import {Duplex, Readable} from 'stream';
 import {remote, ipcRenderer} from 'electron';
+const logger = require('electron-log');
 
 const trackEvent = remote.getGlobal('trackEvent');
 
@@ -78,6 +79,7 @@ class ZitiSocket extends Duplex {
                      * on_connect callback.
                      */
                     (conn) => {
+                        logger.info('on_connect callback: conn is: %o', conn)
                         resolve(conn);
                     },
 
