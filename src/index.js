@@ -21,6 +21,7 @@ import FetchError from './fetch-error';
 import AbortError from './abort-error';
 import {remote} from 'electron';
 import SessionCookies from './session-cookies';
+import FormData from './form-data';
 
 const ziti = require('ziti-sdk-nodejs');
 require('assert').equal(ziti.NF_hello(),"ziti");
@@ -30,6 +31,8 @@ const session = remote.session.defaultSession;
 window.realFetch = window.fetch;
 window.ziti = ziti;
 
+window.realFormData = window.FormData;
+window.FormData = FormData;
 const SESSION_COOKIES = new SessionCookies();
 
 // fix an issue where "format", "parse" aren't a named export for node <10
