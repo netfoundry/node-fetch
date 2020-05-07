@@ -9,6 +9,8 @@ import Stream from 'stream';
 
 import Blob, { BUFFER } from './blob.js';
 import FetchError from './fetch-error.js';
+import log from 'electron-log';
+import FormData from './form-data';
 
 let convert;
 try { convert = require('encoding').convert; } catch(e) {}
@@ -448,6 +450,20 @@ export function extractContentType(body) {
 	} else if (typeof body.getBoundary === 'function') {
 		// detect form data input from form-data module
 		return `multipart/form-data;boundary=${body.getBoundary()}`;
+	} else if (typeof body === 'object' && typeof body.getAll === 'function') {
+		// detect FormData object
+		log.info('extractContentType() FormData DETECTED for: %o', body);
+		var form = new FormData();
+		for (var key of body.keys()) {
+			log.info('key is: ', key);
+			log.info('val is: ', body.get(key));
+			form.append(key, body.get(key));
+		 }
+		 log.info('form is: %o', form);
+		 log.info('getHeaders() says: %o', form.getHeaders());
+
+		return `multipart/form-data;boundary=${form.getBoundary()}`;
+		// return null;
 	} else if (body instanceof Stream) {
 		// body is stream
 		// can't really do much about this

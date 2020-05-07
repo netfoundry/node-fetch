@@ -79,7 +79,7 @@ class ZitiSocket extends Duplex {
                      * on_connect callback.
                      */
                     (conn) => {
-                        logger.info('on_connect callback: conn is: %o', conn)
+                        // logger.info('on_connect callback: conn: %o', conn)
                         resolve(conn);
                     },
 
@@ -87,6 +87,7 @@ class ZitiSocket extends Duplex {
                      * on_data callback
                      */
                     (data) => {
+                        // logger.info('on_data callback: conn: %o, data: \n%s', this.zitiConnection, data.toString());
                         this.readableZitiStream.push(data);
                     },
                 );
@@ -157,8 +158,11 @@ class ZitiSocket extends Duplex {
             throw new Error('chunk type of [' + typeof chunk + '] is not a supported type');
         }
         if (buffer.length > 0) {
-            const conn = await this.getZitiConnection().catch((e) => console.log('inside ziti-socket.js _write(), Error 1: ', e.message));
-            await this.NF_write(conn, buffer).catch((e) => console.log('_write(), Error 2: ', e.message)); // eslint-disable-line new-cap
+            const conn = await this.getZitiConnection().catch((e) => logger.error('inside ziti-socket.js _write(), Error 1: ', e.message));
+
+            // logger.info('_write: conn: %o, length: %s, data: \n%s', conn, buffer.length, buffer.toString());
+
+            await this.NF_write(conn, buffer).catch((e) => logger.error('_write(), Error 2: ', e.message));
         }
         cb();
     }

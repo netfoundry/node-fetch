@@ -466,7 +466,7 @@ export async function getNodeRequestOptions(request) {
 	
 	// fetch step 1.3
 	if (!headers.has('Accept')) {
-		headers.set('Accept', 'text/*');	// limit to text for now
+		headers.set('Accept', '*/*');
 	}
 
 	// Basic fetch
@@ -503,7 +503,7 @@ export async function getNodeRequestOptions(request) {
 
 	// HTTP-network-or-cache fetch step 2.11
 	if (!headers.has('User-Agent')) {
-		headers.set('User-Agent', 'ziti-electron-fetch/' + pjson.version + ' (+https://github.com/netfoundry/node-fetch)');
+		headers.set('User-Agent', 'ziti-electron-fetch/' + pjson.version + ' (+https://github.com/netfoundry/ziti-electron-fetch)');
 	}
 
 	// --- Disable gzip for now ---
@@ -522,7 +522,7 @@ export async function getNodeRequestOptions(request) {
 
 	await isZitiInitialized().catch((e) => console.log('isZitiInitialized(), Error: ', e.message));
 
-	const serviceIsAvailable = await getCachedServiceAvailable(parsedURL.host).catch((e) => console.log('getCachedServiceAvailable Error: ', e.message)); // eslint-disable-line new-cap
+	const serviceIsAvailable = await getCachedServiceAvailable(parsedURL.host).catch((e) => log.error('getCachedServiceAvailable Error: ', e.message)); // eslint-disable-line new-cap
 
     if (serviceIsAvailable) {
 	  	if (serviceIsAvailable.status === 0) {

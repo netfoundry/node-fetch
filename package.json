@@ -1,6 +1,6 @@
 {
   "name": "ziti-electron-fetch",
-  "version": "2.6.15",
+  "version": "2.6.16",
   "description": "A module that intercepts all window.fetch calls in an Electron renderer process and routes them over a Ziti network",
   "main": "lib/index.js",
   "files": [
@@ -64,7 +64,6 @@
     "chai-string": "~1.3.0",
     "codecov": "^3.6.5",
     "cross-env": "^5.2.0",
-    "form-data": "^2.5.1",
     "is-builtin-module": "^1.0.0",
     "mocha": "^5.0.0",
     "nyc": "11.9.0",
@@ -79,10 +78,13 @@
   "dependencies": {
     "@babel/runtime": "^7.1.2",
     "async-mutex": "^0.1.4",
+    "asynckit": "^0.4.0",
     "cache-manager": "^2.11.1",
+    "combined-stream": "^1.0.8",
     "debug": "^4.1.1",
     "electron": "^5.0.11",
     "electron-log": "^4.1.0",
+    "mime-types": "^2.1.27",
     "ziti-sdk-nodejs": "0.1.26"
   }
 }
