@@ -1,3 +1,18 @@
+/*
+Copyright 2019-2020 Netfoundry, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 /**
  * index.js
@@ -12,6 +27,7 @@ import http from 'http';
 import https from 'https';
 import zlib from 'zlib';
 import Stream from 'stream';
+import log from 'electron-log';
 
 import Body, { writeToStream, getTotalBytes } from './body';
 import Response from './response';
@@ -22,6 +38,7 @@ import AbortError from './abort-error';
 import {remote} from 'electron';
 import SessionCookies from './session-cookies';
 import FormData from './form-data';
+import XMLHttpRequest from './XMLHttpRequest';
 
 const ziti = require('ziti-sdk-nodejs');
 require('assert').equal(ziti.NF_hello(),"ziti");
@@ -33,6 +50,9 @@ window.ziti = ziti;
 
 window.realFormData = window.FormData;
 window.FormData = FormData;
+window.realXMLHttpRequest = window.XMLHttpRequest;
+window.XMLHttpRequest = XMLHttpRequest;
+
 const SESSION_COOKIES = new SessionCookies();
 
 // fix an issue where "format", "parse" aren't a named export for node <10
@@ -113,6 +133,8 @@ const resolve_url = Url.resolve;
  * @return  Promise
  */
 export default function fetch(url, opts) {
+
+	// log.info('fetch() url: %o, opts: %o', url, opts);
 
 	// allow custom promise
 	if (!fetch.Promise) {

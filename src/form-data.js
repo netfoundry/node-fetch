@@ -1,15 +1,61 @@
+/*
+Copyright 2019-2020 Netfoundry, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import CombinedStream from 'combined-stream';
 import util from 'util';
 import path from 'path';
-import http from 'http';
-import https from 'https';
 import fs from 'fs';
 import mime from 'mime-types';
 import asynckit from 'asynckit';
 import log from 'electron-log';
+import { Readable } from 'stream';
 
 // make it a Stream
 util.inherits(FormData, CombinedStream);
+
+class ReadableBlob extends Readable {
+  constructor(options, blob) {
+    super(options);
+    this.blobReadableStream = blob.stream();
+    this.ReadableStreamDefaultReader = this.blobReadableStream.getReader();
+  }
+
+  async _read(size) {
+    // log.info('ReadableBlob._read() entered, size is: %o', size);  
+    let stop = false;
+    while (!stop) {
+      // log.info('ReadableBlob top of loop, calling _read()');
+      let readResults = await this.ReadableStreamDefaultReader.read();
+      // debugger
+      // log.info('ReadableBlob._read() results is: %o', readResults);
+      if (readResults.done) {
+        this.push(null);
+        stop = true;
+      } else {
+        let pushResult = this.push(readResults.value);
+        // log.info('ReadableBlob._read() push result is: %o', pushResult);
+        // debugger
+        if (!pushResult) {
+          stop = true;
+          // log.info('ReadableBlob stopping loop');
+        }
+      }
+    }
+  }
+}
 
 /**
  * Create readable "multipart/form-data" streams.
@@ -23,6 +69,8 @@ export default function FormData(options) {
   if (!(this instanceof FormData)) {
     return new FormData(options);
   }
+
+  this._ZITI = true;
 
   this._overheadLength = 0;
   this._valueLength = 0;
@@ -39,7 +87,7 @@ export default function FormData(options) {
 FormData.LINE_BREAK = '\r\n';
 FormData.DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 
-FormData.prototype.append = function(field, value, options) {
+FormData.prototype.append = async function(field, value, options) {
 
   options = options || {};
 
@@ -71,11 +119,41 @@ FormData.prototype.append = function(field, value, options) {
   /**
    *  The following currently assumes that the 'value' parm is a native File object.
    */
-  log.info('value is: %o', value);
-  log.info('value.path is: %o', value.path);
-  log.info('value.size is: %o', value.size);
-  append(fs.createReadStream(value.path));
-  options.knownLength = value.size;
+  // log.info('value is: %o', value);
+  // log.info('value.path is: %o', value.path);
+  // log.info('value.size is: %o', value.size);
+  // log.info('typeof value is: %o', typeof value);
+  if (typeof value === "object" && typeof value.name == 'string' && typeof value.path == 'string' && typeof value.type == 'string') { // is it a File?
+    // log.info('***** FILE *****');
+    // debugger
+    options.knownLength = value.size;
+    append(fs.createReadStream(value.path));
+  }
+  else if (typeof value === "object" && typeof value.name == 'string') { // is it a Blob?
+    // log.info('***** BLOB *****');
+    // debugger
+    // var readable = new Readable().wrap(value.stream());
+    // debugger
+    var readableBlob = new ReadableBlob({}, value);
+    options.knownLength = value.size;
+    append(readableBlob);
+
+  //   var arrayBuffer = await value.arrayBuffer();
+  //   debugger
+  //   const buffer = Buffer.from(arrayBuffer);
+  //   const readable = new Readable();
+  //   readable._read = () => {};
+  //   readable.push(buffer);
+  //   readable.push(null);
+  //   options.knownLength = value.size;
+  //   append(readable);
+  // // } else if (value.name) {
+  // //   append(value.stream);
+  } else {
+    // log.info('***** STRING *****');
+    options.knownLength = value.size;
+    append(value);  // just a string
+  }
 
   append(footer);
 

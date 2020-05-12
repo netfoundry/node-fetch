@@ -79,7 +79,7 @@ class ZitiSocket extends Duplex {
                      * on_connect callback.
                      */
                     (conn) => {
-                        // logger.info('on_connect callback: conn: %o', conn)
+                        // logger.info('on_connect callback: conn: %s', this.connAsHex(conn))
                         resolve(conn);
                     },
 
@@ -87,7 +87,7 @@ class ZitiSocket extends Duplex {
                      * on_data callback
                      */
                     (data) => {
-                        // logger.info('on_data callback: conn: %o, data: \n%s', this.zitiConnection, data.toString());
+                        // logger.info('on_data callback: conn: %s, data: \n%s', this.connAsHex(this.zitiConnection), data.toString());
                         this.readableZitiStream.push(data);
                     },
                 );
@@ -141,6 +141,13 @@ class ZitiSocket extends Duplex {
         });
     }
 
+    connAsHex(conn) {
+        if (conn < 0) {
+            conn = 0xFFFFFFFF + conn + 1;
+        }
+        return '0x' + conn.toString(16);
+    }
+
     /**
      * Implements the writeable stream method `_write` by pushing the data onto the underlying Ziti connection.
      * It is possible that this function is called before the Ziti connect has completed, so this function will (currently)
@@ -160,7 +167,7 @@ class ZitiSocket extends Duplex {
         if (buffer.length > 0) {
             const conn = await this.getZitiConnection().catch((e) => logger.error('inside ziti-socket.js _write(), Error 1: ', e.message));
 
-            // logger.info('_write: conn: %o, length: %s, data: \n%s', conn, buffer.length, buffer.toString());
+            // logger.info('_write: conn: %s, length: %s, data: \n%s', this.connAsHex(conn), buffer.byteLength, buffer.toString());
 
             await this.NF_write(conn, buffer).catch((e) => logger.error('_write(), Error 2: ', e.message));
         }
