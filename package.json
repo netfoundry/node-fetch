@@ -82,7 +82,7 @@
     "cache-manager": "^2.11.1",
     "combined-stream": "^1.0.8",
     "debug": "^4.1.1",
-    "electron": "^5.0.11",
+    "electron": "^9.0.0",
     "electron-log": "^4.1.0",
     "encoding": "^0.1.12",
     "mime-types": "^2.1.27",
