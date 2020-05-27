@@ -172,6 +172,7 @@ export default class Headers {
 	 */
 	append(name, value) {
 		name = `${name}`;
+		// name = name.toLowerCase();
 		value = `${value}`;
 		validateName(name);
 		validateValue(value);

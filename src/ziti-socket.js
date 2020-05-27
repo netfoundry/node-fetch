@@ -18,7 +18,7 @@ import {Duplex, Readable} from 'stream';
 import {remote, ipcRenderer} from 'electron';
 const logger = require('electron-log');
 
-const trackEvent = remote.getGlobal('trackEvent');
+// const trackEvent = remote.getGlobal('trackEvent');
 
 class ZitiSocket extends Duplex {
 

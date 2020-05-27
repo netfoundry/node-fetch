@@ -34,23 +34,21 @@ class ReadableBlob extends Readable {
   }
 
   async _read(size) {
-    // log.info('ReadableBlob._read() entered, size is: %o', size);  
+    log.info('ReadableBlob._read() entered, size is: %o', size);  
     let stop = false;
     while (!stop) {
-      // log.info('ReadableBlob top of loop, calling _read()');
+      log.info('ReadableBlob top of loop, calling ReadableStreamDefaultReader.read()');
       let readResults = await this.ReadableStreamDefaultReader.read();
-      // debugger
-      // log.info('ReadableBlob._read() results is: %o', readResults);
+      log.info('ReadableStreamDefaultReader.read() results is: %o', readResults);
       if (readResults.done) {
-        this.push(null);
+        await this.push(null);
         stop = true;
       } else {
-        let pushResult = this.push(readResults.value);
-        // log.info('ReadableBlob._read() push result is: %o', pushResult);
-        // debugger
+        let pushResult = await this.push(readResults.value);
+        log.info('ReadableBlob._read() push result is: %o', pushResult);
         if (!pushResult) {
           stop = true;
-          // log.info('ReadableBlob stopping loop');
+          log.info('ReadableBlob stopping loop');
         }
       }
     }

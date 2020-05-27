@@ -256,7 +256,7 @@ export default XMLHttpRequest = function() {
    * @param string data Optional data to send as request body.
    */
   this.send = async function(data) {
-    // log.info('XHR.send() data: %o', data);
+    log.info('XHR.send() data: %o', data);
 
     if (this.readyState !== this.OPENED) {
       throw new Error("INVALID_STATE_ERR: connection must be opened before send() is called");
@@ -276,15 +276,21 @@ export default XMLHttpRequest = function() {
 
     settings.body = data;
     var resp = await fetch(settings.url, settings);
+    log.info('XHR resp: %o', resp);
+    log.info('XHR resp.body.on: %o', resp.body.on);
+
     response = resp;
     self.status = resp.status;
     response.body.on('data', function(chunk) {
+      log.info('XHR resp on.data: %o', chunk);
       self.responseBodyText += chunk;
       if (sendFlag) {
         setState(self.LOADING);
       }
     });
     response.body.on('end', function(chunk) {
+      log.info('XHR resp on.end: %o', chunk);
+
       self.response = self.responseBodyText;
       sendFlag = false;
       setState(self.DONE);
