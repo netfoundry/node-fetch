@@ -325,11 +325,11 @@ export default class Request {
 		method = method.toUpperCase();
 
 		if ((init.body != null || isRequest(input) && input.body !== null) && (method === 'GET' || method === 'HEAD')) {
-			if (init.body === '') {
-				init.body = undefined;
-			} else {
+			// if (init.body === '') {
+				// init.body = undefined;
+			// } else {
 				throw new TypeError('Request with GET/HEAD method cannot have body');
-			}
+			// }
 		}
 
 		let inputBody = init.body != null ?
@@ -468,27 +468,28 @@ export async function getNodeRequestOptions(request) {
 		await loadCookies(request, parsedURL.hostname);
 	}
 
-	// for (const key in request.sessionCookies.getAll()) {
-	// 	// skip loop if the property is from prototype
-	// 	if (!request.sessionCookies.hasOwnProperty(key)) continue;
+	for (const key in request.sessionCookies.getAll()) {
+		// skip loop if the property is from prototype
+		if (!request.sessionCookies.hasOwnProperty(key)) continue;
 
-	// 	const cookie = request.sessionCookies.get(key);
-	// 	// log.info('request.sessionCookies for: [%s] yields: [%s][%s]', key, cookie.name);
+		const cookie = request.sessionCookies.get(key);
+		// log.info('request.sessionCookies for: [%s] yields: [%s][%s]', key, cookie.name);
 
-	// 	if (!cookie) continue;
-	// 	if (!cookie.domain) continue;
+		if (!cookie) continue;
+		if (!cookie.domain) continue;
 
-	// 	if ((cookie.domain === parsedURL.hostname) || (cookie.domain === ('.' + parsedURL.hostname))) {
-	// 		// log.info('headers.append: [Cookie: %s=%s]', cookie.name, cookie.value);
-	// 		headers.append('Cookie', cookie.name + '=' + cookie.value);
-	// 		if (cookie.name === 'MMAUTHTOKEN') {
-	// 			headers.append('Authorization', 'Bearer ' + cookie.value);
-	// 		}
-	// 		if (cookie.name === 'MMCSRF') {
-	// 			headers.append('X-Csrf-Token', cookie.value);
-	// 		}
-	// 	}
-	// }
+		if ((cookie.domain === parsedURL.hostname) || (cookie.domain === ('.' + parsedURL.hostname))) {
+			// log.info('headers.append: [Cookie: %s=%s]', cookie.name, cookie.value);
+			headers.append('Cookie', cookie.name + '=' + cookie.value);
+			if (cookie.name === 'MMAUTHTOKEN') {
+				headers.append('Authorization', 'Bearer ' + cookie.value);
+			}
+			if (cookie.name === 'MMCSRF') {
+				headers.append('X-Csrf-Token', cookie.value);
+			}
+		}
+	}
+
 	
 	// fetch step 1.3
 	if (!headers.has('Accept')) {
@@ -497,6 +498,8 @@ export async function getNodeRequestOptions(request) {
 
 	// Basic fetch
 	if (!parsedURL.hostname) {
+		log.info('non-absolute URL encountered: %o]', parsedURL);
+
 		if (ZitiFetchLocation.location !== undefined) {
 			parsedURL.hostname = ZitiFetchLocation.location.host;
 		} else {
@@ -520,19 +523,19 @@ export async function getNodeRequestOptions(request) {
 		if (!cookie) continue;
 		if (!cookie.domain) continue;
 
-		log.info('cookie.domain: %o, parsedURL.hostname: %o', cookie.domain, parsedURL.hostname);
-		if (parsedURL.hostname) {
-			if ((parsedURL.hostname.endsWith(cookie.domain)) || (('.' + parsedURL.hostname).endsWith(cookie.domain))) {
-				headers.append('Cookie', cookie.name + '=' + cookie.value);
-				log.info('headers.append: [%s=%s]', cookie.name, cookie.value);
-				if (cookie.name === 'MMAUTHTOKEN') {
-					headers.append('Authorization', 'Bearer ' + cookie.value);
-				}
-				if (cookie.name === 'MMCSRF') {
-					headers.append('X-Csrf-Token', cookie.value);
-				}
-			}
-		}
+		// log.info('cookie.domain: %o, parsedURL.hostname: %o', cookie.domain, parsedURL.hostname);
+		// if (parsedURL.hostname) {
+		// 	if ((parsedURL.hostname.endsWith(cookie.domain)) || (('.' + parsedURL.hostname).endsWith(cookie.domain))) {
+		// 		headers.append('Cookie', cookie.name + '=' + cookie.value);
+		// 		// log.info('headers.append: [%s=%s]', cookie.name, cookie.value);
+		// 		if (cookie.name === 'MMAUTHTOKEN') {
+		// 			headers.append('Authorization', 'Bearer ' + cookie.value);
+		// 		}
+		// 		if (cookie.name === 'MMCSRF') {
+		// 			headers.append('X-Csrf-Token', cookie.value);
+		// 		}
+		// 	}
+		// }
 	}
 
 
@@ -555,9 +558,13 @@ export async function getNodeRequestOptions(request) {
 			contentLengthValue = String(totalBytes);
 		}
 	}
-	if (contentLengthValue) {
-		// headers.set('Content-Length', contentLengthValue);
-		headers.set('Transfer-Encoding', 'chunked');
+	if (/^(POST|PUT)$/i.test(request.method)) {
+		if (typeof contentLengthValue == 'string') {
+			headers.set('Content-Length', contentLengthValue);
+			// headers.set('Transfer-Encoding', 'chunked');
+		} else {	// it must be a stream, so we go with chunked encoding instead of content length
+			headers.set('Transfer-Encoding', 'chunked');
+		}
 	}
 
 	// HTTP-network-or-cache fetch step 2.11

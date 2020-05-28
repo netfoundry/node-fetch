@@ -125,7 +125,7 @@ class ZitiRequest extends EventEmitter {
                         //
                         else if (obj.len < 0) {
                             let err = this.requestException(obj.len);
-                            logger.info('on_resp_body callback emitting error: %o', err);
+                            logger.error('on_resp_body callback emitting error: %o', err);
                             this.emit('error', err);
                         }
 
@@ -171,7 +171,19 @@ class ZitiRequest extends EventEmitter {
         let headersArray = [];
 
         for (var key of Object.keys(this.opts.headers)) {
-            let hdr = key + ':' + this.opts.headers[key];
+            let hdr
+            if (key === 'Cookie') {
+                let value = '';
+                this.opts.headers[key].forEach(element => {
+                    if (value.length > 0) {
+                        value += ';';
+                    }
+                    value += element;
+                });
+                hdr = key + ':' + value;
+            } else {
+                hdr = key + ':' + this.opts.headers[key];
+            }
             headersArray.push(hdr);
         }
         
@@ -225,7 +237,7 @@ class ZitiRequest extends EventEmitter {
                         //  ERROR 
                         //
                         if (obj.status < 0) {
-                            logger.info('obj.status === ERROR');
+                            logger.error('obj.status === ERROR');
                             reject(this.requestException(obj.status));
                         }
 
@@ -262,7 +274,7 @@ class ZitiRequest extends EventEmitter {
             throw new Error('chunk type of [' + typeof chunk + '] is not a supported type');
         }
         
-        // logger.info('req.write() for: uuid: %o, data (%o)', this.uuid, buffer);
+        // logger.info('req.write() for: uuid: %o \ndata (%o)\nstring-fied (%s)', this.uuid, buffer, buffer.toString());
 
         let obj = await this.do_Ziti_http_request_data(
 

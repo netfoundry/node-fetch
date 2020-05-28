@@ -203,7 +203,7 @@ function consumeBody() {
 	// log.info('consumeBody() entered');
 
 	if (this[INTERNALS].disturbed) {
-		log.info('consumeBody() this[INTERNALS].disturbed, body used already for: %s', this.url);
+		log.error('consumeBody() this[INTERNALS].disturbed, body used already for: %s', this.url);
 
 		return Body.Promise.reject(new TypeError(`body used already for: ${this.url}`));
 	}
@@ -211,14 +211,12 @@ function consumeBody() {
 	this[INTERNALS].disturbed = true;
 
 	if (this[INTERNALS].error) {
-		log.info('consumeBody() this[INTERNALS].error: %o', this[INTERNALS].error);
+		log.error('consumeBody() this[INTERNALS].error: %o', this[INTERNALS].error);
 
 		return Body.Promise.reject(this[INTERNALS].error);
 	}
 
 	let body = this.body;
-
-	log.info('consumeBody() body is: %o', body);
 
 	// body is null
 	if (body === null) {
@@ -227,15 +225,11 @@ function consumeBody() {
 
 	// body is blob
 	if (isBlob(body)) {
-		log.info('consumeBody() body is blob');
-
 		body = body.stream();
 	}
 
 	// body is buffer
 	if (Buffer.isBuffer(body)) {
-		log.info('consumeBody() body is buffer');
-
 		return Body.Promise.resolve(body);
 	}
 
@@ -243,8 +237,6 @@ function consumeBody() {
 	if (!(body instanceof Stream)) {
 		return Body.Promise.resolve(Buffer.alloc(0));
 	}
-
-	log.info('consumeBody() body is stream');
 
 	// body is stream
 	// get ready to actually consume the body
@@ -265,8 +257,7 @@ function consumeBody() {
 
 		// handle stream errors
 		body.on('error', err => {
-			log.info('consumeBody() in on.error: %o', err);
-
+			log.error('consumeBody() in on.error: %o', err);
 			if (err.name === 'AbortError') {
 				// if the request was aborted, reject with this Error
 				abort = true;
@@ -278,7 +269,6 @@ function consumeBody() {
 		});
 
 		body.on('data', chunk => {
-			log.info('consumeBody() in on.data: %s', chunk.toString());
 
 			if (abort || chunk === null) {
 				return;
@@ -294,12 +284,9 @@ function consumeBody() {
 			accumBytes += chunk.length;
 			accum.push(chunk);
 
-			log.info('consumeBody() in on.data: accumBytes: %o', accumBytes);
-
 		});
 
 		body.on('end', () => {
-			log.info('consumeBody() in on.end');
 
 			if (abort) {
 				return;
@@ -531,13 +518,11 @@ export function extractContentType(body) {
  */
 export function getTotalBytes(instance) {
 	const {body} = instance;
-	log.info('getTotalBytes() entered for body: %o', body);
 
 	if (body === null) {
 		// body is null
 		return 0;
 	} else if (isBlob(body)) {
-		log.info('getTotalBytes() body is Blob size: %o', body.size);
 		return body.size;
 	} else if (Buffer.isBuffer(body)) {
 		// body is buffer
@@ -546,13 +531,12 @@ export function getTotalBytes(instance) {
 		// detect form data input from form-data module
 		if (body._lengthRetrievers && body._lengthRetrievers.length == 0 || // 1.x
 			body.hasKnownLength && body.hasKnownLength()) { // 2.x
-				log.info('getTotalBytes() body.getLengthSync() is: %o', body.getLengthSync());
 				return body.getLengthSync();
 		}
-		log.info('getTotalBytes() body.getLengthSync(), size unknown');
+		// log.info('getTotalBytes() body.getLengthSync(), size unknown');
 		return null;
 	} else {
-		log.info('getTotalBytes() body is stream, size unknown');
+		// log.info('getTotalBytes() body is stream, size unknown');
 		// body is stream
 		return null;
 	}
@@ -571,14 +555,15 @@ export async function writeToStream(dest, instance) {
 		// body is null
 		dest.end();
 	} else if (isBlob(body)) {
-		log.info('writeToStream: body is a BLOB');
+		// log.info('writeToStream: body is a BLOB');
 		body.stream().pipe(dest);
 	} else if (Buffer.isBuffer(body)) {
 		// body is buffer
+		// log.info('writeToStream: body is a Buffer: %o', body.toString());
 		await dest.write(body);
-		dest.end()
+		// dest.end()
 	} else {
-		log.info('writeToStream: body is a STREAM: %o', body);
+		// log.info('writeToStream: body is a STREAM: %o', body);
 		// body is stream
 		body.pipe(dest);
 

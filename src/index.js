@@ -58,6 +58,7 @@ catch (e) {
 
 const session = remote.session.defaultSession;
 
+try {
 window.realFetch = window.fetch;
 window.ziti = ziti;
 
@@ -66,6 +67,11 @@ window.FormData = FormData;
 window.realXMLHttpRequest = window.XMLHttpRequest;
 window.XMLHttpRequest = XMLHttpRequest;
 window.ZitiFetchLocation = new FetchLocation(location);
+}
+catch (e) {
+	log.error(e);
+	debugger
+}
 
 const SESSION_COOKIES = new SessionCookies();
 
@@ -99,9 +105,6 @@ session.cookies.on('changed', (event, cookie, _ /*cause*/, removed) => {
  */
 async function captureCookies(url, headers) {
 
-	log.info('============== captureCookies START for: %s, %o', url, headers);
-	// debugger;
-
 	const parsedURL = parse_url(url);
   
 	const setCookieHeaders = headers.raw()['Set-Cookie'];
@@ -132,12 +135,10 @@ async function captureCookies(url, headers) {
 		  		};
 				SESSION_COOKIES.put(cookie);
 				await session.cookies.set(cookie).catch((e) => log.error('session.cookies.set() Error: ', e.message));
-				log.info('============== session.cookies.set for: %o', cookie);
 			}
 	  	});
 	  	await session.cookies.flushStore().catch((e) => log.error('session.cookies.flushStore() Error: ', e.message));
 	}
-	log.info('============== captureCookies END for: %s, %o', url, headers);
 }
   
 // fix an issue where "PassThrough", "resolve" aren't a named export for node <10
@@ -211,7 +212,7 @@ export default function fetch(url, opts) {
 		 */
 		if (request.hasActiveZitiService) {
 
-			log.info('ZITIFYd send \nurl: %s\nheaders: %o', options.href, options.headers);
+			// log.info('ZITIFYd send \nurl: %s\nheaders: %o', options.href, options.headers);
 			req = new ZitiRequest(options);
 			await req.start();
 	
@@ -251,7 +252,7 @@ export default function fetch(url, opts) {
 
 		req.on('response', async res => {
 
-			log.info('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
+			// log.info('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
 
 			clearTimeout(reqTimeout);
 
