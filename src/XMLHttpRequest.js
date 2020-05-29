@@ -202,7 +202,7 @@ export default XMLHttpRequest = function() {
     ) {
       const headers = response.headers.raw();
       for (var h in headers) {
-        if (header === h) {
+        if (header.toLowerCase() === h.toLowerCase()) {
           var headerValue = headers[h][0];
           return headerValue.toLowerCase();
         }
@@ -363,7 +363,7 @@ export default XMLHttpRequest = function() {
    * Dispatch any events, including both "on" methods and events attached using addEventListener.
    */
   this.dispatchEvent = function(event) {
-    // log.info('XHR readyState [%o], dispatchEvent: [%o]', self.readyState, event);
+    // log.info('XHR.dispatchEvent: [%o]', event);
     if (typeof self["on" + event] === "function") {
       self["on" + event]();
     }

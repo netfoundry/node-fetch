@@ -275,6 +275,7 @@ class ZitiRequest extends EventEmitter {
         }
         
         // logger.info('req.write() for: uuid: %o \ndata (%o)\nstring-fied (%s)', this.uuid, buffer, buffer.toString());
+        // logger.info('req.write() for: uuid: %o \ndata (%o)', this.uuid, buffer);
 
         let obj = await this.do_Ziti_http_request_data(
 

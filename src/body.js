@@ -531,7 +531,7 @@ export function getTotalBytes(instance) {
 		// detect form data input from form-data module
 		if (body._lengthRetrievers && body._lengthRetrievers.length == 0 || // 1.x
 			body.hasKnownLength && body.hasKnownLength()) { // 2.x
-				return body.getLengthSync();
+				// return body.getLengthSync();
 		}
 		// log.info('getTotalBytes() body.getLengthSync(), size unknown');
 		return null;

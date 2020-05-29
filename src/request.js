@@ -498,7 +498,7 @@ export async function getNodeRequestOptions(request) {
 
 	// Basic fetch
 	if (!parsedURL.hostname) {
-		log.info('non-absolute URL encountered: %o]', parsedURL);
+		log.info('non-absolute URL encountered, path: %o', parsedURL.path);
 
 		if (ZitiFetchLocation.location !== undefined) {
 			parsedURL.hostname = ZitiFetchLocation.location.host;
