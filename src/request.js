@@ -263,10 +263,8 @@ function getCachedServiceAvailable(service) {
 			if (cachedResult) {
 		  		resolve(cachedResult);
 			} else {
-
-		  		const newResult = await callNativeNFServiceAvailable(service).catch((e) => console.log('callNativeNFServiceAvailable Error: ', e.message)); // eslint-disable-line new-cap
-				  
-				  memoryCache.set(service, newResult);
+		  		const newResult = await callNativeNFServiceAvailable(service).catch((e) => log.error('callNativeNFServiceAvailable Error: ', e.message));
+				memoryCache.set(service, newResult);
 		  		resolve(newResult);
 			}
 	  	});
@@ -326,9 +324,12 @@ export default class Request {
 		let method = init.method || input.method || 'GET';
 		method = method.toUpperCase();
 
-		if ((init.body != null || isRequest(input) && input.body !== null) &&
-			(method === 'GET' || method === 'HEAD')) {
-			throw new TypeError('Request with GET/HEAD method cannot have body');
+		if ((init.body != null || isRequest(input) && input.body !== null) && (method === 'GET' || method === 'HEAD')) {
+			// if (init.body === '') {
+				// init.body = undefined;
+			// } else {
+				throw new TypeError('Request with GET/HEAD method cannot have body');
+			// }
 		}
 
 		let inputBody = init.body != null ?
@@ -366,6 +367,7 @@ export default class Request {
 			headers,
 			parsedURL,
 			signal,
+			hasActiveZitiService: false,
 		};
 
 		// node-fetch-only options
@@ -398,6 +400,10 @@ export default class Request {
 
 	get signal() {
 		return this[INTERNALS].signal;
+	}
+
+	get hasActiveZitiService() {
+		return this[INTERNALS].hasActiveZitiService;
 	}
 
 	/**
@@ -467,11 +473,13 @@ export async function getNodeRequestOptions(request) {
 		if (!request.sessionCookies.hasOwnProperty(key)) continue;
 
 		const cookie = request.sessionCookies.get(key);
+		// log.info('request.sessionCookies for: [%s] yields: [%s][%s]', key, cookie.name);
 
 		if (!cookie) continue;
 		if (!cookie.domain) continue;
 
 		if ((cookie.domain === parsedURL.hostname) || (cookie.domain === ('.' + parsedURL.hostname))) {
+			// log.info('headers.append: [Cookie: %s=%s]', cookie.name, cookie.value);
 			headers.append('Cookie', cookie.name + '=' + cookie.value);
 			if (cookie.name === 'MMAUTHTOKEN') {
 				headers.append('Authorization', 'Bearer ' + cookie.value);
@@ -481,6 +489,7 @@ export async function getNodeRequestOptions(request) {
 			}
 		}
 	}
+
 	
 	// fetch step 1.3
 	if (!headers.has('Accept')) {
@@ -488,13 +497,47 @@ export async function getNodeRequestOptions(request) {
 	}
 
 	// Basic fetch
-	if (!parsedURL.protocol || !parsedURL.hostname) {
-		throw new TypeError('Only absolute URLs are supported');
+	if (!parsedURL.hostname) {
+		log.info('non-absolute URL encountered, path: %o', parsedURL.path);
+
+		if (ZitiFetchLocation.location !== undefined) {
+			parsedURL.hostname = ZitiFetchLocation.location.host;
+		} else {
+			// throw new TypeError('Only absolute URLs are supported');
+		}
+	}
+	if (!parsedURL.protocol) {
+		parsedURL.protocol = 'https:';
 	}
 
 	if (!/^https?:$/.test(parsedURL.protocol)) {
 		throw new TypeError('Only HTTP(S) protocols are supported');
 	}
+
+	for (const key in request.sessionCookies.getAll()) {
+		// skip loop if the property is from prototype
+		if (!request.sessionCookies.hasOwnProperty(key)) continue;
+
+		const cookie = request.sessionCookies.get(key);
+
+		if (!cookie) continue;
+		if (!cookie.domain) continue;
+
+		// log.info('cookie.domain: %o, parsedURL.hostname: %o', cookie.domain, parsedURL.hostname);
+		// if (parsedURL.hostname) {
+		// 	if ((parsedURL.hostname.endsWith(cookie.domain)) || (('.' + parsedURL.hostname).endsWith(cookie.domain))) {
+		// 		headers.append('Cookie', cookie.name + '=' + cookie.value);
+		// 		// log.info('headers.append: [%s=%s]', cookie.name, cookie.value);
+		// 		if (cookie.name === 'MMAUTHTOKEN') {
+		// 			headers.append('Authorization', 'Bearer ' + cookie.value);
+		// 		}
+		// 		if (cookie.name === 'MMCSRF') {
+		// 			headers.append('X-Csrf-Token', cookie.value);
+		// 		}
+		// 	}
+		// }
+	}
+
 
 	if (
 		request.signal
@@ -515,13 +558,18 @@ export async function getNodeRequestOptions(request) {
 			contentLengthValue = String(totalBytes);
 		}
 	}
-	if (contentLengthValue) {
-		headers.set('Content-Length', contentLengthValue);
+	if (/^(POST|PUT)$/i.test(request.method)) {
+		if (typeof contentLengthValue == 'string') {
+			headers.set('Content-Length', contentLengthValue);
+			// headers.set('Transfer-Encoding', 'chunked');
+		} else {	// it must be a stream, so we go with chunked encoding instead of content length
+			headers.set('Transfer-Encoding', 'chunked');
+		}
 	}
 
 	// HTTP-network-or-cache fetch step 2.11
 	if (!headers.has('User-Agent')) {
-		headers.set('User-Agent', 'ziti-electron-fetch/' + pjson.version + ' (+https://github.com/netfoundry/ziti-electron-fetch)');
+		headers.set('User-Agent', 'ziti-electron-fetch/' + pjson.version);
 	}
 
 	// --- Disable gzip for now ---
@@ -540,16 +588,18 @@ export async function getNodeRequestOptions(request) {
 
 	await isZitiInitialized().catch((e) => console.log('isZitiInitialized(), Error: ', e.message));
 
-	const serviceIsAvailable = await getCachedServiceAvailable(parsedURL.host).catch((e) => log.error('getCachedServiceAvailable Error: ', e.message)); // eslint-disable-line new-cap
+	if (parsedURL.host && parsedURL.host) {
+		const serviceIsAvailable = await getCachedServiceAvailable(parsedURL.host).catch((e) => log.error('getCachedServiceAvailable Error: ', e.message)); // eslint-disable-line new-cap
 
-    if (serviceIsAvailable) {
-	  	if (serviceIsAvailable.status === 0) {
-        	agent = new ZitiAgent(parsedURL);
-      	} else {
-			log.info('SKIPPING %o', parsedURL);
+		if (serviceIsAvailable) {
+			if (serviceIsAvailable.status === 0) {
+				request[INTERNALS].hasActiveZitiService = true;
+			} else {
+				request[INTERNALS].hasActiveZitiService = false;
+			}
+		} else {
+			request[INTERNALS].hasActiveZitiService = false;
 		}
-	} else {
-		log.info('SKIPPING %o', parsedURL);
 	}
 	
 	if (!headers.has('Connection') && !agent) {

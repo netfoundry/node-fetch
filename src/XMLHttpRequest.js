@@ -202,7 +202,7 @@ export default XMLHttpRequest = function() {
     ) {
       const headers = response.headers.raw();
       for (var h in headers) {
-        if (header === h) {
+        if (header.toLowerCase() === h.toLowerCase()) {
           var headerValue = headers[h][0];
           return headerValue.toLowerCase();
         }
@@ -276,15 +276,21 @@ export default XMLHttpRequest = function() {
 
     settings.body = data;
     var resp = await fetch(settings.url, settings);
+    // log.info('XHR resp: %o', resp);
+    // log.info('XHR resp.body.on: %o', resp.body.on);
+
     response = resp;
     self.status = resp.status;
     response.body.on('data', function(chunk) {
+      // log.info('XHR resp on.data: \n%s', chunk);
       self.responseBodyText += chunk;
       if (sendFlag) {
         setState(self.LOADING);
       }
     });
     response.body.on('end', function(chunk) {
+      // log.info('XHR resp on.end: \n%s', chunk);
+
       self.response = self.responseBodyText;
       sendFlag = false;
       setState(self.DONE);
@@ -342,7 +348,7 @@ export default XMLHttpRequest = function() {
 
   /**
    * Remove an event callback that has already been bound.
-   * Only works on the matching funciton, cannot be a copy.
+   * Only works on the matching function, cannot be a copy.
    */
   this.removeEventListener = function(event, callback) {
     if (event in listeners) {
@@ -357,6 +363,7 @@ export default XMLHttpRequest = function() {
    * Dispatch any events, including both "on" methods and events attached using addEventListener.
    */
   this.dispatchEvent = function(event) {
+    // log.info('XHR.dispatchEvent: [%o]', event);
     if (typeof self["on" + event] === "function") {
       self["on" + event]();
     }

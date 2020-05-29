@@ -42,6 +42,9 @@ export default function Body(body, {
 	size = 0,
 	timeout = 0
 } = {}) {
+
+	// log.info('Body mixin entered, body: %o', body);
+
 	if (body == null) {
 		// body is undefined or null
 		body = null;
@@ -61,9 +64,14 @@ export default function Body(body, {
 	} else if (body instanceof Stream) {
 		// body is stream
 	} else {
+		// log.info('Body is a string: [%o]', body);
+
 		// none of the above
 		// coerce to string then buffer
 		body = Buffer.from(String(body));
+
+		// log.info('Body as a Buffer: [%o]', body);
+		// log.info('Body as a Buffer.toString: [%o]', body.toString());
 	}
 	this[INTERNALS] = {
 		body,
@@ -191,13 +199,20 @@ Body.mixIn = function (proto) {
  * @return  Promise
  */
 function consumeBody() {
+
+	// log.info('consumeBody() entered');
+
 	if (this[INTERNALS].disturbed) {
+		log.error('consumeBody() this[INTERNALS].disturbed, body used already for: %s', this.url);
+
 		return Body.Promise.reject(new TypeError(`body used already for: ${this.url}`));
 	}
 
 	this[INTERNALS].disturbed = true;
 
 	if (this[INTERNALS].error) {
+		log.error('consumeBody() this[INTERNALS].error: %o', this[INTERNALS].error);
+
 		return Body.Promise.reject(this[INTERNALS].error);
 	}
 
@@ -242,6 +257,7 @@ function consumeBody() {
 
 		// handle stream errors
 		body.on('error', err => {
+			log.error('consumeBody() in on.error: %o', err);
 			if (err.name === 'AbortError') {
 				// if the request was aborted, reject with this Error
 				abort = true;
@@ -253,21 +269,25 @@ function consumeBody() {
 		});
 
 		body.on('data', chunk => {
+
 			if (abort || chunk === null) {
 				return;
 			}
 
 			if (this.size && accumBytes + chunk.length > this.size) {
 				abort = true;
+				log.error('consumeBody() in on.data: content size over limit: %o', this.size);
 				reject(new FetchError(`content size at ${this.url} over limit: ${this.size}`, 'max-size'));
 				return;
 			}
 
 			accumBytes += chunk.length;
 			accum.push(chunk);
+
 		});
 
 		body.on('end', () => {
+
 			if (abort) {
 				return;
 			}
@@ -277,6 +297,7 @@ function consumeBody() {
 			try {
 				resolve(Buffer.concat(accum, accumBytes));
 			} catch (err) {
+				log.error('consumeBody() Could not create Buffer from response body for %s: %s', this.url, err.message);
 				// handle streams that have accumulated too much data (issue #414)
 				reject(new FetchError(`Could not create Buffer from response body for ${this.url}: ${err.message}`, 'system', err));
 			}
@@ -435,6 +456,9 @@ export function clone(instance) {
  * @param   Mixed  instance  Any options.body input
  */
 export function extractContentType(body) {
+
+	// log.info('extractContentType() entered for body: %o', body);
+
 	if (body === null) {
 		// body is null
 		return null;
@@ -494,6 +518,7 @@ export function extractContentType(body) {
  */
 export function getTotalBytes(instance) {
 	const {body} = instance;
+
 	if (body === null) {
 		// body is null
 		return 0;
@@ -506,10 +531,12 @@ export function getTotalBytes(instance) {
 		// detect form data input from form-data module
 		if (body._lengthRetrievers && body._lengthRetrievers.length == 0 || // 1.x
 			body.hasKnownLength && body.hasKnownLength()) { // 2.x
-			return body.getLengthSync();
+				// return body.getLengthSync();
 		}
+		// log.info('getTotalBytes() body.getLengthSync(), size unknown');
 		return null;
 	} else {
+		// log.info('getTotalBytes() body is stream, size unknown');
 		// body is stream
 		return null;
 	}
@@ -521,21 +548,38 @@ export function getTotalBytes(instance) {
  * @param   Body    instance   Instance of Body
  * @return  Void
  */
-export function writeToStream(dest, instance) {
+export async function writeToStream(dest, instance) {
 	const {body} = instance;
 
 	if (body === null) {
 		// body is null
 		dest.end();
 	} else if (isBlob(body)) {
+		// log.info('writeToStream: body is a BLOB');
 		body.stream().pipe(dest);
 	} else if (Buffer.isBuffer(body)) {
 		// body is buffer
-		dest.write(body);
-		dest.end()
+		// log.info('writeToStream: body is a Buffer: %o', body.toString());
+		await dest.write(body);
+		// dest.end()
 	} else {
+		// log.info('writeToStream: body is a STREAM: %o', body);
 		// body is stream
 		body.pipe(dest);
+
+		// let stop = false;
+		// while (!stop) {
+		//   log.info('writeToStream: top of loop, calling body.read()');
+		//   let readResults = await body.read();
+		//   log.info('writeToStream: readResults: %o', readResults);
+		//   if (readResults.done) {
+		// 	dest.end();
+		// 	stop = true;
+		//   } else {
+		// 	await dest.write(readResults.value);
+		//   }
+		// }
+	
 	}
 }
 

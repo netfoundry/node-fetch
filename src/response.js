@@ -24,6 +24,7 @@ import http from 'http';
 
 import Headers from './headers.js';
 import Body, { clone, extractContentType } from './body';
+import log from 'electron-log';
 
 const INTERNALS = Symbol('Response internals');
 

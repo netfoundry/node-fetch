@@ -29,22 +29,36 @@ import zlib from 'zlib';
 import Stream from 'stream';
 import log from 'electron-log';
 
+log.info('ziti-electron-fetch LOADED');
+
 import Body, { writeToStream, getTotalBytes } from './body';
 import Response from './response';
 import Headers, { createHeadersLenient } from './headers';
 import Request, { getNodeRequestOptions } from './request';
 import FetchError from './fetch-error';
+import FetchLocation from './fetch-location';
 import AbortError from './abort-error';
 import {remote} from 'electron';
 import SessionCookies from './session-cookies';
 import FormData from './form-data';
 import XMLHttpRequest from './XMLHttpRequest';
+import ZitiRequest from './ziti-request';
 
-const ziti = require('ziti-sdk-nodejs');
-require('assert').equal(ziti.NF_hello(),"ziti");
+let ziti
+try {
+	log.info('about to load ziti-sdk-nodejs');
+	ziti = require('ziti-sdk-nodejs');
+	log.info('ziti is: %o', ziti);
+	require('assert').equal(ziti.NF_hello(),"ziti");
+	log.info('ziti.NF_hello says: %s', ziti.NF_hello());
+}
+catch (e) {
+	log.error(e);
+}
 
 const session = remote.session.defaultSession;
 
+try {
 window.realFetch = window.fetch;
 window.ziti = ziti;
 
@@ -52,6 +66,12 @@ window.realFormData = window.FormData;
 window.FormData = FormData;
 window.realXMLHttpRequest = window.XMLHttpRequest;
 window.XMLHttpRequest = XMLHttpRequest;
+window.ZitiFetchLocation = new FetchLocation(location);
+}
+catch (e) {
+	log.error(e);
+	debugger
+}
 
 const SESSION_COOKIES = new SessionCookies();
 
@@ -87,8 +107,8 @@ async function captureCookies(url, headers) {
 
 	const parsedURL = parse_url(url);
   
-	const setCookieHeaders = headers.raw()['set-cookie'];
-  
+	const setCookieHeaders = headers.raw()['Set-Cookie'];
+	  
 	if (setCookieHeaders) {
 		setCookieHeaders.forEach(async (element) => {
 			if (session) {
@@ -113,11 +133,11 @@ async function captureCookies(url, headers) {
 					httpOnly: httpOnlyFlag,
 					expirationDate: expiration.getTime(),
 		  		};
-		  		SESSION_COOKIES.put(cookie);
-		  		await session.cookies.set(cookie).catch((e) => console.log('session.cookies.set() Error: ', e.message)); // eslint-disable-line new-cap
+				SESSION_COOKIES.put(cookie);
+				await session.cookies.set(cookie).catch((e) => log.error('session.cookies.set() Error: ', e.message));
 			}
 	  	});
-	  	await session.cookies.flushStore().catch((e) => console.log('session.cookies.flushStore() Error: ', e.message)); // eslint-disable-line new-cap
+	  	await session.cookies.flushStore().catch((e) => log.error('session.cookies.flushStore() Error: ', e.message));
 	}
 }
   
@@ -134,7 +154,7 @@ const resolve_url = Url.resolve;
  */
 export default function fetch(url, opts) {
 
-	// log.info('fetch() url: %o, opts: %o', url, opts);
+	// log.info('fetch() \nurl: %s \nopts: %o', url, opts);
 
 	// allow custom promise
 	if (!fetch.Promise) {
@@ -161,6 +181,7 @@ export default function fetch(url, opts) {
 		const options = await getNodeRequestOptions(request);
 
 		const send = (options.protocol === 'https:' ? https : http).request;
+
 		const { signal } = request;
 		let response = null;
 
@@ -184,8 +205,24 @@ export default function fetch(url, opts) {
 			finalize();
 		}
 
-		// send request
-		const req = send(options);
+		let req;
+
+		/**
+		 * 	Send over Ziti only if the target host name matches an active Ziti Service...
+		 */
+		if (request.hasActiveZitiService) {
+
+			// log.info('ZITIFYd send \nurl: %s\nheaders: %o', options.href, options.headers);
+			req = new ZitiRequest(options);
+			await req.start();
+	
+		} 
+		else {	// ... otherwise route over raw internet
+			// log.info('BYPASSing: %o', options);
+			req = send(options);
+
+		}
+
 		let reqTimeout;
 
 		if (signal) {
@@ -208,11 +245,15 @@ export default function fetch(url, opts) {
 		}
 
 		req.on('error', err => {
+			log.error('error EVENT: err: %o', err);
 			reject(new FetchError(`request to ${request.url} failed, reason: ${err.message}`, 'system', err));
 			finalize();
 		});
 
-		req.on('response', res => {
+		req.on('response', async res => {
+
+			// log.info('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
+
 			clearTimeout(reqTimeout);
 
 			const headers = createHeadersLenient(res.headers);
@@ -396,5 +437,6 @@ export {
 	Headers,
 	Request,
 	Response,
-	FetchError
+	FetchError,
+	FetchLocation
 };
