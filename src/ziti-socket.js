@@ -26,7 +26,7 @@ class ZitiSocket extends Duplex {
         super();
 
         /**
-         * This stream is where we'll put any data returned from a Ziti connection (see NF_dial.data.call_back)
+         * This stream is where we'll put any data returned from a Ziti connection (see ziti_dial.data.call_back)
          */
         this.readableZitiStream = new Readable();
         this.readableZitiStream._read = function () {}
@@ -60,17 +60,17 @@ class ZitiSocket extends Duplex {
 
 
     /**
-     * Make a connection to the specified Ziti 'service'.  We do this by invoking the NF_dial() function in the Ziti NodeJS-SDK.
+     * Make a connection to the specified Ziti 'service'.  We do this by invoking the ziti_dial() function in the Ziti NodeJS-SDK.
      * @param {*} service 
      */
-    NF_dial(service) {
+    ziti_dial(service) {
         const self = this;
         return new Promise((resolve) => {
             if (self.zitiConnection) {
                 resolve(self.zitiConnection);
             }
             else {
-                window.ziti.NF_dial(
+                window.ziti.ziti_dial(
                     service,
 
                     false,  // This is NOT a websocket
@@ -96,12 +96,12 @@ class ZitiSocket extends Duplex {
     }
 
     /**
-     * Write data onto the underlying Ziti connection by invoking the NF_write() function in the Ziti NodeJS-SDK.  The
+     * Write data onto the underlying Ziti connection by invoking the ziti_write() function in the Ziti NodeJS-SDK.  The
      * NodeJS-SDK expects incoming data to be of type Buffer.
     */
-    NF_write(conn, buffer) {
+    ziti_write(conn, buffer) {
         return new Promise((resolve) => {
-            window.ziti.NF_write(
+            window.ziti.ziti_write(
                 conn, buffer,
                 () => {
                     resolve();
@@ -118,7 +118,7 @@ class ZitiSocket extends Duplex {
      * @return {ZitiSocket}
     */
     async connect(opts) {
-        this.zitiConnection = await this.NF_dial(opts.host).catch((e) => console.log('connect Error: ', e.message)); // eslint-disable-line new-cap
+        this.zitiConnection = await this.ziti_dial(opts.host).catch((e) => console.log('connect Error: ', e.message)); // eslint-disable-line new-cap
     }
      
 
@@ -169,7 +169,7 @@ class ZitiSocket extends Duplex {
 
             // logger.info('_write: conn: %s, length: %s, data: \n%s', this.connAsHex(conn), buffer.byteLength, buffer.toString());
 
-            await this.NF_write(conn, buffer).catch((e) => logger.error('_write(), Error 2: ', e.message));
+            await this.ziti_write(conn, buffer).catch((e) => logger.error('_write(), Error 2: ', e.message));
         }
         cb();
     }

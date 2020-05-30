@@ -49,8 +49,8 @@ try {
 	log.info('about to load ziti-sdk-nodejs');
 	ziti = require('ziti-sdk-nodejs');
 	log.info('ziti is: %o', ziti);
-	require('assert').equal(ziti.NF_hello(),"ziti");
-	log.info('ziti.NF_hello says: %s', ziti.NF_hello());
+	require('assert').equal(ziti.ziti_hello(),"ziti");
+	log.info('ziti.ziti_hello says: %s', ziti.ziti_hello());
 }
 catch (e) {
 	log.error(e);

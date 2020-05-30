@@ -85,10 +85,10 @@ function getJWTFilePath() {
  *
  * @return  Promise
  */
-async function NF_enroll() {
+async function ziti_enroll() {
 	return new Promise((resolve, reject) => {
 		
-		log.debug('NF_enroll entered');
+		log.debug('ziti_enroll entered');
 
 		let identityPath = getJWTFilePath();
 		if (!identityPath || identityPath==='') {
@@ -98,15 +98,15 @@ async function NF_enroll() {
 			reject(new Error('Ziti init failed, window.zitiIdentityPath not set'));
 		}
 
-		log.debug('Now calling window.ziti.NF_enroll: ' + window.ziti.NF_enroll);
+		log.debug('Now calling window.ziti.ziti_enroll: ' + window.ziti.ziti_enroll);
 
-		const erc = window.ziti.NF_enroll(
+		const erc = window.ziti.ziti_enroll(
 
 			identityPath,
 			
 			(data) => {
 
-				log.debug('window.ziti.NF_enroll callback entered, data is (%o)', data);	
+				log.debug('window.ziti.ziti_enroll callback entered, data is (%o)', data);	
 					
 				if (!data.identity) {
 					ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti enroll failed rc [' + data.len + '], ' + data.err, errorCode: -602});
@@ -121,7 +121,7 @@ async function NF_enroll() {
 			}
 		);
 
-		log.debug('window.ziti.NF_enroll rc is (%o)', erc);
+		log.debug('window.ziti.ziti_enroll rc is (%o)', erc);
 
 		if (erc < 0) {
 			if (erc == -2) {
@@ -139,10 +139,10 @@ async function NF_enroll() {
  *
  * @return  Promise
  */
-async function NF_init() {
+async function ziti_init() {
 	return new Promise( async (resolve, reject) => {
 		
-		log.debug('NF_init entered');
+		log.debug('ziti_init entered');
 
 		if (window.zitiInitialized) {
 			resolve(); // quick exit, init already done
@@ -151,7 +151,7 @@ async function NF_init() {
 		// If we do not have an identity file yet
 		if (!fs.existsSync( getIdentityFilePath() )) {
 
-			await NF_enroll().catch((e) => {
+			await ziti_enroll().catch((e) => {
 
 				// ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed rc [' + rc + '], identity is invalid', errorCode: -703});
 				reject(new Error('Ziti init failed rc [' + err + ']'));
@@ -169,13 +169,13 @@ async function NF_init() {
 		// 	reject(new Error('Ziti init failed, window.zitiIdentityPath not set'));
 		// }
 
-		const rc = window.ziti.NF_init(
+		const rc = window.ziti.ziti_init(
 
 			getIdentityFilePath(),
 			
 			(cbRC) => {
 
-				log.debug('window.ziti.NF_init callback entered, cbRC is (%o)', cbRC);
+				log.debug('window.ziti.ziti_init callback entered, cbRC is (%o)', cbRC);
 		
 				if (cbRC < 0) {
 					ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed rc [' + cbRC + '], identity is invalid', errorCode: -702});
@@ -187,7 +187,7 @@ async function NF_init() {
 			}
 		);
 
-		log.debug('window.ziti.NF_init rc is (%o)', rc);
+		log.debug('window.ziti.ziti_init rc is (%o)', rc);
 
 		if (rc < 0) {
 			ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed rc [' + rc + '], identity is invalid', errorCode: -703});
@@ -207,8 +207,8 @@ async function doZitiInitialization() {
 	const release = await mutex.acquire();
 	try {
 		if (!window.zitiInitialized) {
-			await NF_init().catch((e) => {
-				log.error('NF_init exception: ' + e);
+			await ziti_init().catch((e) => {
+				log.error('ziti_init exception: ' + e);
 			});
 			window.zitiInitialized = true;
 		}
@@ -241,7 +241,7 @@ function isZitiInitialized() {
  */
 function callNativeNFServiceAvailable(service) {
 	return new Promise((resolve) => {
-	  	window.ziti.NF_service_available(service, (status) => { // eslint-disable-line new-cap
+	  	window.ziti.ziti_service_available(service, (status) => { // eslint-disable-line new-cap
 			resolve(status);
 	  	});
 	});
