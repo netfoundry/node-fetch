@@ -43,6 +43,9 @@ import SessionCookies from './session-cookies';
 import FormData from './form-data';
 import XMLHttpRequest from './XMLHttpRequest';
 import ZitiRequest from './ziti-request';
+import {Mutex} from 'async-mutex';
+
+const shutdownMutex = new Mutex();
 
 let ziti
 try {
@@ -144,6 +147,50 @@ async function captureCookies(url, headers) {
 // fix an issue where "PassThrough", "resolve" aren't a named export for node <10
 const PassThrough = Stream.PassThrough;
 const resolve_url = Url.resolve;
+
+
+/**
+ * Perform Ziti shutdown (disconnect with Ziti Controller)
+ *
+ * @return  Promise
+ */
+async function ziti_shutdown() {
+	return new Promise( async (resolve, reject) => {
+		
+		log.info('ziti_shutdown entered');
+
+		if (window.zitiInitialized) {
+			log.info('CALLING ziti.ziti_shutdown()');
+			window.ziti.ziti_shutdown();
+		}
+
+		resolve();
+	});
+}
+
+/**
+ * Perform a synchronous, mutex-protected, Ziti shutdown. 
+ * We only want to shutdown once, so we protect the call to the 
+ * Ziti Controller behind a mutex.
+ *
+ * @return  Boolean
+ */
+async function doZitiShutdown() {
+	log.info('doZitiShutdown entered');
+	const release = await shutdownMutex.acquire();
+	try {
+		if (!window.zitiInitialized) {
+			await ziti_shutdown().catch((e) => {
+				log.error('ziti_shutdown exception: ' + e);
+				return;
+			});
+			window.zitiInitialized = false;
+		}
+	} finally {
+		release();
+	}
+	log.info('doZitiShutdown exiting');
+}
 
 /**
  * Fetch function
@@ -252,7 +299,15 @@ export default function fetch(url, opts) {
 
 		req.on('response', async res => {
 
-			// log.info('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
+			if (res.statusCode < 0) {	// Ziti error?
+				log.error('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
+
+				doZitiShutdown();
+
+				reject(new FetchError(`request to ${request.url} failed, code: ${res.statusCode}`, 'system'));
+				finalize();
+				return;	
+			}
 
 			clearTimeout(reqTimeout);
 
