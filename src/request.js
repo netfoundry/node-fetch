@@ -35,7 +35,7 @@ var pjson = require('../package.json');
 import cacheManager from 'cache-manager';
 import {remote, ipcRenderer} from 'electron';
 import {Mutex} from 'async-mutex';
-import ZitiAgent from './ziti-agent';
+// import ZitiAgent from './ziti-agent';
 const session = remote.session.defaultSession;
 
 const trackEvent = remote.getGlobal('trackEvent');
@@ -178,7 +178,9 @@ async function ziti_init() {
 				log.debug('window.ziti.ziti_init callback entered, cbRC is (%o)', cbRC);
 		
 				if (cbRC < 0) {
-					ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed rc [' + cbRC + '], identity is invalid', errorCode: -702});
+					if (typeof window.zitiInitializedTime === 'undefined') {
+						ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed rc [' + cbRC + '], identity is invalid', errorCode: -702});
+					}
 					reject(new Error('Ziti init failed rc [' + cbRC + '], identity is invalid'));
 
 				} else {
@@ -209,8 +211,10 @@ async function doZitiInitialization() {
 		if (!window.zitiInitialized) {
 			await ziti_init().catch((e) => {
 				log.error('ziti_init exception: ' + e);
+				return;
 			});
 			window.zitiInitialized = true;
+			window.zitiInitializedTime = new Date();
 		}
 	} finally {
 		release();

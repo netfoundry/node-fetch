@@ -300,7 +300,13 @@ class ZitiRequest extends EventEmitter {
         ex.code = 'EREQUEST';
         return ex;
     }
-      
+
+    /**
+     * 
+     */
+    abort() {
+    }
+
 }
 
 
