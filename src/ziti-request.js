@@ -151,6 +151,12 @@ class ZitiRequest extends EventEmitter {
 
                     },
                 );
+
+                //
+                if (typeof req === 'undefined') {
+                    logger.error('Ziti_http_request returned NULL');
+                    throw new Error('Ziti_http_request returned NULL');
+                }
     
                 // logger.info('req is (%o)', req);
                 resolve(req);
@@ -194,7 +200,7 @@ class ZitiRequest extends EventEmitter {
             headersArray
 
         ).catch((e) => {
-            logger.error('Error: ', e.message);
+            logger.error('Error: %o', e);
         });
 
     }
