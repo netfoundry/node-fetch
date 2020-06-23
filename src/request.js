@@ -209,12 +209,29 @@ async function doZitiInitialization() {
 	const release = await mutex.acquire();
 	try {
 		if (!window.zitiInitialized) {
+			if (typeof window.zitiInitializeFailedTime !== 'undefined') {
+				let now = new Date();
+				let elapsed = now - window.zitiInitializeFailedTime;
+				let elapsedSeconds = Math.round(elapsed /= 1000);
+				log.error('doZitiInitialization(): elapsedSeconds since last ziti_init failure: %d', elapsedSeconds);
+				if (elapsedSeconds < 10) {
+					log.error('doZitiInitialization(): bypassing ziti_init');
+					return;
+				}
+				window.zitiInitializeFailedTime = undefined;
+			}
+			let initFailed = false;
+			log.info('doZitiInitialization(): proceeding with ziti_init');
 			await ziti_init().catch((e) => {
-				log.error('ziti_init exception: ' + e);
-				return;
+				log.error('doZitiInitialization(): ziti_init exception: ' + e);
+				initFailed = true;
+				window.zitiInitializeFailedTime = new Date();
 			});
-			window.zitiInitialized = true;
-			window.zitiInitializedTime = new Date();
+			if (!initFailed) {
+				log.error('doZitiInitialization(): marking window.zitiInitialized = true');
+				window.zitiInitialized = true;
+				window.zitiInitializedTime = new Date();
+			}
 		}
 	} finally {
 		release();
@@ -227,10 +244,16 @@ async function doZitiInitialization() {
  * @return  Promise
  */
 function isZitiInitialized() {
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
+		let ctr = 0;
 	  (function waitForZitiInitialized() {
 		if (window.zitiInitialized) {
 		  return resolve();
+		}
+		ctr++;
+		if (ctr >= 1000) {
+			log.error('isZitiInitialized(): wait exceeded');
+			return reject();
 		}
 		setTimeout(waitForZitiInitialized, 100);
 	  })();
@@ -590,7 +613,10 @@ export async function getNodeRequestOptions(request) {
 
 	doZitiInitialization();
 
-	await isZitiInitialized().catch((e) => console.log('isZitiInitialized(), Error: ', e.message));
+	await isZitiInitialized().catch((e) => {
+		throw new TypeError('Ziti Initialization Failed');
+	});
+
 
 	if (parsedURL.host && parsedURL.host) {
 		const serviceIsAvailable = await getCachedServiceAvailable(parsedURL.host).catch((e) => log.error('getCachedServiceAvailable Error: ', e.message)); // eslint-disable-line new-cap

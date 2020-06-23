@@ -1,6 +1,6 @@
 {
   "name": "ziti-electron-fetch",
-  "version": "2.6.21",
+  "version": "2.6.22",
   "description": "A module that intercepts all window.fetch calls in an Electron renderer process and routes them over a Ziti network",
   "main": "lib/index.js",
   "files": [
@@ -88,6 +88,6 @@
     "encoding": "^0.1.12",
     "mime-types": "^2.1.27",
     "uuid": "^8.0.0",
-    "ziti-sdk-nodejs": "0.1.30"
+    "ziti-sdk-nodejs": "0.1.31"
   }
 }

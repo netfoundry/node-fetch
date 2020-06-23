@@ -162,8 +162,10 @@ async function ziti_shutdown() {
 		if (window.zitiInitialized) {
 			log.info('CALLING ziti.ziti_shutdown()');
 			window.ziti.ziti_shutdown();
+			window.zitiInitialized = false;
 		}
 
+		log.info('ziti_shutdown exiting');
 		resolve();
 	});
 }
@@ -179,7 +181,7 @@ async function doZitiShutdown() {
 	log.info('doZitiShutdown entered');
 	const release = await shutdownMutex.acquire();
 	try {
-		if (!window.zitiInitialized) {
+		if (window.zitiInitialized) {
 			await ziti_shutdown().catch((e) => {
 				log.error('ziti_shutdown exception: ' + e);
 				return;
