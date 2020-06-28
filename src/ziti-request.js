@@ -85,11 +85,18 @@ class ZitiRequest extends EventEmitter {
         
                 // logger.info('TRANSMITTING: req uuid: %o \nmethod: %s \nurl: %s \nheaders: %0', this.uuid, method, url, headers);
 
-                let req = window.ziti.Ziti_http_request(
+                window.ziti.Ziti_http_request(
                     url,
                     method,
                     headers,
 
+                    // on_req callback
+                    (obj) => {
+
+                        resolve(obj.req);
+
+                    },
+                    
                     // on_resp callback
                     (obj) => {
 
@@ -100,7 +107,9 @@ class ZitiRequest extends EventEmitter {
                         this.response.statusCode = obj.code;
                         this.response.statusMessageCode = obj.status;
 
-                        // logger.info('on_resp callback emitting resp: %o', this.response);
+                        logger.info('on_resp callback: req is: %o, statusCode: %o', this.ziti_http_request, this.response.statusCode);
+
+                        // logger.info('on_resp callback: emitting resp: %o', this.response);
 
                         this.emit('response', this.response);
 
@@ -109,7 +118,7 @@ class ZitiRequest extends EventEmitter {
                     // on_resp_body callback
                     (obj) => {
 
-                        // logger.info('TRANSMITTING (on_resp_body callback): req uuid: %o \nobj: %0', this.uuid, obj);
+                        // logger.info('on_resp_body callback: req is: %o, len: %o', this.ziti_http_request, obj.len);
 
                         //
                         //  REQUEST COMPLETE 
@@ -125,7 +134,7 @@ class ZitiRequest extends EventEmitter {
                         //
                         else if (obj.len < 0) {
                             let err = this.requestException(obj.len);
-                            logger.error('on_resp_body callback emitting error: %o', err);
+                            // logger.error('on_resp_body callback: emitting error: %o', err);
                             this.emit('error', err);
                         }
 
@@ -138,13 +147,13 @@ class ZitiRequest extends EventEmitter {
 
                                 const buffer = Buffer.from(obj.body);
 
-                                // logger.info('DATA RECEIVED: body is: \n%s', buffer.toString());
+                                // logger.info('on_resp_body callback: DATA RECEIVED: body is: \n%s', buffer.toString());
                             
                                 this.response._pushData(buffer);
 
                             } else {
 
-                                logger.error('DATA RECEIVED: but body is undefined!');
+                                // logger.error('on_resp_body callback: DATA RECEIVED: but body is undefined!');
 
                             }
                         }
@@ -152,15 +161,6 @@ class ZitiRequest extends EventEmitter {
                     },
                 );
 
-                //
-                if (typeof req === 'undefined') {
-                    logger.error('Ziti_http_request returned NULL');
-                    throw new Error('Ziti_http_request returned NULL');
-                }
-    
-                // logger.info('req is (%o)', req);
-                resolve(req);
-    
             }
             catch (e) {
                 reject(e);
@@ -203,6 +203,7 @@ class ZitiRequest extends EventEmitter {
             logger.error('Error: %o', e);
         });
 
+        // logger.info('req.start(), req is: %o', this.ziti_http_request);
     }
     
     /**
@@ -210,9 +211,11 @@ class ZitiRequest extends EventEmitter {
      */
     end(chunk, encoding, callback) {
 
-        // logger.info('req.end() for: uuid: %o', this.uuid);
+        // logger.info('req.end() req is: %o', this.ziti_http_request);
 
-        window.ziti.Ziti_http_request_end( this.ziti_http_request );
+        if (typeof this.ziti_http_request !== 'undefined') {
+            window.ziti.Ziti_http_request_end( this.ziti_http_request );
+        }
       
         return this;
     };
@@ -227,6 +230,13 @@ class ZitiRequest extends EventEmitter {
         const self = this;
         return new Promise((resolve, reject) => {
             try {
+
+                // logger.info('do_Ziti_http_request_data() for: req: %o', req);
+
+                if (typeof req === 'undefined') {
+                    logger.error('req is "undefined"');
+                    throw new Error('req is "undefined"');
+                }
     
                 // logger.info('SEND request_data for req uuid: %o, data (%o)', this.uuid, buffer);
     
@@ -237,7 +247,7 @@ class ZitiRequest extends EventEmitter {
                     // on_req_body callback
                     (obj) => {
 
-                        // logger.info('on_req_body, obj: %o', obj);
+                        // logger.info('on_req_body() cb, obj: %o', obj);
 
                         //
                         //  ERROR 
@@ -251,7 +261,7 @@ class ZitiRequest extends EventEmitter {
                         // SUCCESSFUL TRANSMISSION
                         //
                         else {
-                            // logger.info('DATA TRAMSMITTED for req uuid: %o', this.uuid);
+                            // logger.info('DATA TRAMSMITTED for req: %o', req);
 
                             resolve(obj);
                         }
@@ -282,6 +292,7 @@ class ZitiRequest extends EventEmitter {
         
         // logger.info('req.write() for: uuid: %o \ndata (%o)\nstring-fied (%s)', this.uuid, buffer, buffer.toString());
         // logger.info('req.write() for: uuid: %o \ndata (%o)', this.uuid, buffer);
+        // logger.info('req.write() for: req: %o', this.ziti_http_request);
 
         let obj = await this.do_Ziti_http_request_data(
 
@@ -293,7 +304,7 @@ class ZitiRequest extends EventEmitter {
             this.emit('error', e);
         });
 
-        // logger.info('req.write() back from call to do_Ziti_http_request_data for: uuid: %o', this.uuid);
+        // logger.info('req.write() back from call to do_Ziti_http_request_data for: req: %o', this.ziti_http_request);
 
     }
 

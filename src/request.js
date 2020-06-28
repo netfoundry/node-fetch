@@ -633,7 +633,7 @@ export async function getNodeRequestOptions(request) {
 	}
 	
 	if (!headers.has('Connection') && !agent) {
-		headers.set('Connection', 'close');
+		headers.set('Connection', 'keep-alive');
 	}
 
 	// HTTP-network fetch step 4.2

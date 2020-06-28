@@ -261,9 +261,16 @@ export default function fetch(url, opts) {
 		 */
 		if (request.hasActiveZitiService) {
 
-			// log.info('ZITIFYd send \nurl: %s\nheaders: %o', options.href, options.headers);
-			req = new ZitiRequest(options);
-			await req.start();
+			try {
+				// log.info('ZITIFYd send \nurl: %s\nheaders: %o', options.href, options.headers);
+				req = new ZitiRequest(options);
+				await req.start();
+			}
+			catch (e) {
+				log.error('err: %o', e);
+				reject(new FetchError(`request to ${request.url} failed, reason: ${e.message}`, 'system', e));
+				finalize();	
+			}
 	
 		} 
 		else {	// ... otherwise route over raw internet
@@ -304,11 +311,8 @@ export default function fetch(url, opts) {
 			if (res.statusCode < 0) {	// Ziti error?
 				log.error('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
 
-				doZitiShutdown();
+				res.statusCode = 500;
 
-				reject(new FetchError(`request to ${request.url} failed, code: ${res.statusCode}`, 'system'));
-				finalize();
-				return;	
 			}
 
 			clearTimeout(reqTimeout);
