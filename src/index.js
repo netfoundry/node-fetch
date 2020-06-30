@@ -311,8 +311,9 @@ export default function fetch(url, opts) {
 			if (res.statusCode < 0) {	// Ziti error?
 				log.error('req.on[response] \nrequest.url: %s \nres.statusCode is: %o', request.url, res.statusCode);
 
-				res.statusCode = 500;
-
+				reject(new FetchError(`Ziti error: [${res.statusCode}] at: ${request.url}`, 'ziti-error'));
+				finalize();
+				return;
 			}
 
 			clearTimeout(reqTimeout);

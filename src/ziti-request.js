@@ -93,6 +93,8 @@ class ZitiRequest extends EventEmitter {
                     // on_req callback
                     (obj) => {
 
+                        // logger.info('on_req callback: req is: %o', obj.req);
+
                         resolve(obj.req);
 
                     },
