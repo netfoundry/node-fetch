@@ -78,7 +78,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.1.2",
-    "async-mutex": "^0.1.4",
+    "async-mutex": "^0.2.2",
     "asynckit": "^0.4.0",
     "cache-manager": "^2.11.1",
     "combined-stream": "^1.0.8",
