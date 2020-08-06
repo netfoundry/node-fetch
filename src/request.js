@@ -154,7 +154,7 @@ async function ziti_init() {
 			await ziti_enroll().catch((e) => {
 
 				// ipcRenderer.sendToHost('did-fail-load', {zitiIdentityPath: window.zitiIdentityPath, errorDescription: 'Ziti init failed rc [' + rc + '], identity is invalid', errorCode: -703});
-				reject(new Error('Ziti init failed rc [' + err + ']'));
+				reject(new Error('Ziti init failed rc [' + e + ']'));
 	
 			});
 

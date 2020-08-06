@@ -22,7 +22,7 @@ import log from 'electron-log';
 import FormData from './form-data';
 
 let convert;
-try { convert = require('encoding').convert; } catch(e) {}
+// try { convert = require('encoding').convert; } catch(e) {}
 
 const INTERNALS = Symbol('Body internals');
 
