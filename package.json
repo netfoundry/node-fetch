@@ -71,7 +71,7 @@
     "parted": "^0.1.1",
     "promise": "^8.0.3",
     "resumer": "0.0.0",
-    "rollup": "^0.63.4",
+    "rollup": "^2.10.9",
     "rollup-plugin-babel": "^4.3.3",
     "string-to-arraybuffer": "^1.0.2",
     "whatwg-url": "^5.0.0"
